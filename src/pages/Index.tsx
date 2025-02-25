@@ -6,7 +6,8 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { useDropzone } from 'react-dropzone';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Book, Search } from 'lucide-react';
+import { Upload, Book, Search, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 import SelectionToolbar from '@/components/SelectionToolbar';
 
 // Set up PDF.js worker
@@ -17,6 +18,7 @@ const Index = () => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.2);
+  const [width, setWidth] = useState(100); // Percentage of container width
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
@@ -35,6 +37,19 @@ const Index = () => {
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
+  };
+
+  const handleZoomIn = () => {
+    setScale(prev => Math.min(prev + 0.2, 2.5));
+  };
+
+  const handleZoomOut = () => {
+    setScale(prev => Math.max(prev - 0.2, 0.5));
+  };
+
+  const handleReset = () => {
+    setScale(1.2);
+    setWidth(100);
   };
 
   return (
@@ -87,17 +102,65 @@ const Index = () => {
           </div>
 
           <Card className="p-6">
-            <Document
-              file={file}
-              onLoadSuccess={onDocumentLoadSuccess}
-              className="max-w-4xl mx-auto"
-            >
-              <Page
-                pageNumber={currentPage}
-                scale={scale}
-                className="page"
-              />
-            </Document>
+            {/* Controls */}
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleZoomOut}
+                  disabled={scale <= 0.5}
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+                <span className="min-w-[60px] text-center">
+                  {(scale * 100).toFixed(0)}%
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleZoomIn}
+                  disabled={scale >= 2.5}
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleReset}
+                >
+                  <RotateCw className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-4 min-w-[200px]">
+                <span className="text-sm">Width</span>
+                <Slider
+                  value={[width]}
+                  onValueChange={(values) => setWidth(values[0])}
+                  min={50}
+                  max={100}
+                  step={5}
+                  className="flex-1"
+                />
+                <span className="text-sm w-12">{width}%</span>
+              </div>
+            </div>
+
+            {/* PDF Viewer */}
+            <div style={{ width: `${width}%` }} className="mx-auto">
+              <Document
+                file={file}
+                onLoadSuccess={onDocumentLoadSuccess}
+                className="mx-auto"
+              >
+                <Page
+                  pageNumber={currentPage}
+                  scale={scale}
+                  className="page"
+                  width={undefined}
+                />
+              </Document>
+            </div>
 
             {numPages && (
               <div className="flex justify-center gap-4 mt-4">
