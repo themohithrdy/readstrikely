@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, Book, Search, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import SelectionToolbar from '@/components/SelectionToolbar';
+import { toast } from 'sonner';
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -18,7 +18,7 @@ const Index = () => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.2);
-  const [width, setWidth] = useState(100); // Percentage of container width
+  const [width, setWidth] = useState(100);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
@@ -41,16 +41,69 @@ const Index = () => {
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.2, 2.5));
+    toast.success('Zoomed in');
   };
 
   const handleZoomOut = () => {
     setScale(prev => Math.max(prev - 0.2, 0.5));
+    toast.success('Zoomed out');
   };
 
   const handleReset = () => {
     setScale(1.2);
     setWidth(100);
+    toast.success('View reset');
   };
+
+  const goToNextPage = () => {
+    if (numPages && currentPage < numPages) {
+      setCurrentPage(prev => prev + 1);
+      toast.success('Next page');
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+      toast.success('Previous page');
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!file) return;
+
+      switch (e.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          e.preventDefault();
+          goToNextPage();
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          e.preventDefault();
+          goToPreviousPage();
+          break;
+        case '+':
+          e.preventDefault();
+          handleZoomIn();
+          break;
+        case '-':
+          e.preventDefault();
+          handleZoomOut();
+          break;
+        case 'r':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            handleReset();
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [file, numPages, currentPage]);
 
   return (
     <div className="min-h-screen p-6 flex flex-col gap-6 max-w-6xl mx-auto">
@@ -59,6 +112,11 @@ const Index = () => {
         <p className="text-muted-foreground">
           Enhanced reading experience with powerful tools
         </p>
+        {file && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Use arrow keys to navigate pages, +/- to zoom, Ctrl+R to reset view
+          </p>
+        )}
       </header>
 
       {!file && (
@@ -166,7 +224,7 @@ const Index = () => {
               <div className="flex justify-center gap-4 mt-4">
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  onClick={goToPreviousPage}
                   disabled={currentPage <= 1}
                 >
                   Previous
@@ -176,7 +234,7 @@ const Index = () => {
                 </span>
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentPage(Math.min(numPages, currentPage + 1))}
+                  onClick={goToNextPage}
                   disabled={currentPage >= numPages}
                 >
                   Next
