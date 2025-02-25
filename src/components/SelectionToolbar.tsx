@@ -37,8 +37,20 @@ const SelectionToolbar = () => {
         span.style.textDecoration = 'underline';
         span.style.textDecorationColor = '#4DB6AC';
         span.style.textDecorationThickness = '2px';
-        range.surroundContents(span);
+        span.style.textDecorationSkipInk = 'none';
+        span.style.textUnderlineOffset = '2px';
+        span.style.transition = 'all 0.2s ease-in-out';
+        span.className = 'hover:text-teal-600';
+        
+        // Create wrapper for animation
+        const wrapper = document.createElement('span');
+        wrapper.style.display = 'inline-block';
+        wrapper.style.animation = 'underlineSlideIn 0.3s ease-out forwards';
+        wrapper.appendChild(span);
+        
+        range.surroundContents(wrapper);
         setSelection(null);
+        toast.success('Text underlined');
       }
     }
   };
